@@ -42,14 +42,19 @@ export default function Ask() {
       return;
     }
 
-    // Calculate random position within container bounds
-    // No button size is roughly 80x48 (px-8 py-4)
-    // Yes button scale depends on noCount
     const noWidth = 100;
     const noHeight = 60;
-    const yesSizeBase = 160; // Approximate base size of Yes button
-    const yesCurrentScale = 1 + (newCount * 0.9);
-    const yesSize = yesSizeBase * yesCurrentScale;
+    
+    // Exact equal growth in 10 steps
+    // Initial scale: 1
+    // Final scale at 10 steps: we want it to cover the screen. 
+    // Let's use 20 as the "full screen" scale.
+    // Growth per step = (20 - 1) / 10 = 1.9
+    const growthPerStep = 1.9;
+    const nextYesScale = 1 + (newCount * growthPerStep);
+    
+    const yesSizeBase = 120; // Approximate base diameter of the button
+    const yesCurrentRadius = (yesSizeBase * nextYesScale) / 2;
 
     let randomX = 0;
     let randomY = 0;
@@ -57,16 +62,19 @@ export default function Ask() {
     let attempts = 0;
 
     // Safety margin to prevent overlap
-    const margin = 20;
+    const margin = 30;
 
-    while (collision && attempts < 50) {
+    while (collision && attempts < 100) {
       attempts++;
+      // Get random coordinates within container
       randomX = Math.random() * (containerRect.width - noWidth) - (containerRect.width / 2 - noWidth / 2);
       randomY = Math.random() * (containerRect.height - noHeight) - (containerRect.height / 2 - noHeight / 2);
 
-      // Simple collision check with centered Yes button
+      // Distance from center (where Yes button is)
       const dist = Math.sqrt(Math.pow(randomX, 2) + Math.pow(randomY, 2));
-      if (dist > (yesSize / 2 + margin)) {
+      
+      // If distance is greater than Yes button radius + margin, we're safe
+      if (dist > (yesCurrentRadius + margin)) {
         collision = false;
       }
     }
@@ -100,7 +108,8 @@ export default function Ask() {
 
   // Yes button grows with each No interaction
   // Every step increases scale equally until it fills screen at step 10
-  const yesScale = 1 + (noCount * 0.9);
+  // Growth per step = (20 - 1) / 10 = 1.9
+  const yesScale = 1 + (noCount * 1.9);
   
   // If request not found
   if (!isLoading && !request) {
@@ -164,14 +173,31 @@ export default function Ask() {
             {/* Interactive Area */}
             <div 
               ref={containerRef}
-              className="h-[400px] w-full relative flex items-center justify-center"
+              className="h-[500px] w-full relative flex items-center justify-center gap-12"
             >
-              {/* YES Button */}
+              {/* NO Button (Starts Left) */}
+              {noButtonVisible && (
+                <motion.button
+                  animate={{ 
+                    x: noCount === 0 ? -100 : noPosition.x, 
+                    y: noCount === 0 ? 0 : noPosition.y 
+                  }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  onMouseEnter={handleNoInteraction}
+                  onClick={handleNoInteraction}
+                  className="absolute px-8 py-4 bg-slate-200 text-slate-500 font-bold rounded-full text-xl md:text-2xl hover:bg-slate-300 transition-colors z-20"
+                >
+                  No
+                </motion.button>
+              )}
+
+              {/* YES Button (Starts Right) */}
               <motion.button
                 layout
                 onClick={handleYesClick}
                 animate={{ 
-                  scale: noCount >= 10 ? 25 : yesScale,
+                  x: noCount === 0 ? 100 : 0,
+                  scale: noCount >= 10 ? 30 : yesScale,
                   // When huge, ensure it covers the screen properly
                   zIndex: noCount >= 10 ? 50 : 10,
                 }}
@@ -183,22 +209,6 @@ export default function Ask() {
               >
                 Yes <Heart fill="currentColor" className={noCount >= 10 ? 'w-12 h-12' : 'w-6 h-6'} />
               </motion.button>
-
-              {/* NO Button */}
-              {noButtonVisible && (
-                <motion.button
-                  animate={{ 
-                    x: noPosition.x, 
-                    y: noPosition.y 
-                  }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  onMouseEnter={handleNoInteraction}
-                  onClick={handleNoInteraction}
-                  className="absolute px-8 py-4 bg-slate-200 text-slate-500 font-bold rounded-full text-xl md:text-2xl hover:bg-slate-300 transition-colors z-20"
-                >
-                  No
-                </motion.button>
-              )}
             </div>
           </motion.div>
         ) : (
