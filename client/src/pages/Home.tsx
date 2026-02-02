@@ -81,7 +81,7 @@ export default function Home() {
             <Sparkles className="text-primary w-8 h-8" />
           </motion.div>
           <h1 className="text-4xl md:text-5xl mb-2 text-primary font-handwriting">
-            Ask Cute!
+            Ask a cutie!
           </h1>
           <p className="text-muted-foreground font-sans">
             Create a playful question for someone special.
