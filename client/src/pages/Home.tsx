@@ -16,7 +16,7 @@ export default function Home() {
     resolver: zodResolver(insertRequestSchema),
     defaultValues: {
       question: "Will you go out with me?",
-      message: "Yay! I can't wait! ❤️",
+      message: "Yayyy! I can't wait! ❤️",
     },
   });
 
@@ -82,6 +82,7 @@ export default function Home() {
           <p className="text-muted-foreground font-sans">
             Create a playful question for someone special.
           </p>
+          <p className="text-muted-foreground font-sans text-sm"> Dev: @sourodiproy89 aka Equilibrium 🎀</p>
         </div>
 
         <AnimatePresence mode="wait">
