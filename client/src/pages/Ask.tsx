@@ -34,7 +34,7 @@ export default function Ask() {
     if (!containerRect) return;
     
     // Increment counter
-    const newCount = noCount + 1;
+    const newCount = Math.min(noCount + 1, 10);
     setNoCount(newCount);
 
     if (newCount >= 10) {
@@ -43,10 +43,33 @@ export default function Ask() {
     }
 
     // Calculate random position within container bounds
-    // Padding to keep button inside
-    const padding = 60; 
-    const randomX = Math.random() * (containerRect.width - padding * 2) - (containerRect.width / 2 - padding);
-    const randomY = Math.random() * (containerRect.height - padding * 2) - (containerRect.height / 2 - padding);
+    // No button size is roughly 80x48 (px-8 py-4)
+    // Yes button scale depends on noCount
+    const noWidth = 100;
+    const noHeight = 60;
+    const yesSizeBase = 160; // Approximate base size of Yes button
+    const yesCurrentScale = 1 + (newCount * 0.9);
+    const yesSize = yesSizeBase * yesCurrentScale;
+
+    let randomX = 0;
+    let randomY = 0;
+    let collision = true;
+    let attempts = 0;
+
+    // Safety margin to prevent overlap
+    const margin = 20;
+
+    while (collision && attempts < 50) {
+      attempts++;
+      randomX = Math.random() * (containerRect.width - noWidth) - (containerRect.width / 2 - noWidth / 2);
+      randomY = Math.random() * (containerRect.height - noHeight) - (containerRect.height / 2 - noHeight / 2);
+
+      // Simple collision check with centered Yes button
+      const dist = Math.sqrt(Math.pow(randomX, 2) + Math.pow(randomY, 2));
+      if (dist > (yesSize / 2 + margin)) {
+        collision = false;
+      }
+    }
 
     setNoPosition({ x: randomX, y: randomY });
   };
@@ -76,8 +99,8 @@ export default function Ask() {
   };
 
   // Yes button grows with each No interaction
-  // Max scale to fill container width roughly
-  const yesScale = 1 + (noCount * 0.5);
+  // Every step increases scale equally until it fills screen at step 10
+  const yesScale = 1 + (noCount * 0.9);
   
   // If request not found
   if (!isLoading && !request) {
@@ -148,7 +171,7 @@ export default function Ask() {
                 layout
                 onClick={handleYesClick}
                 animate={{ 
-                  scale: noCount >= 10 ? 15 : yesScale,
+                  scale: noCount >= 10 ? 25 : yesScale,
                   // When huge, ensure it covers the screen properly
                   zIndex: noCount >= 10 ? 50 : 10,
                 }}
