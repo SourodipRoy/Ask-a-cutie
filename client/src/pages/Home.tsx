@@ -2,8 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocation } from "wouter";
-import { useCreateRequest } from "@/hooks/use-requests";
-import { insertRequestSchema, type InsertRequest } from "@shared/schema";
+import { insertRequestSchema, type InsertRequest, encodeData } from "@shared/schema";
 import { Heart, Send, Sparkles, Copy, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
@@ -11,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 export default function Home() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [createdId, setCreatedId] = useState<number | null>(null);
+  const [createdUrl, setCreatedUrl] = useState<string | null>(null);
   
   const form = useForm<InsertRequest>({
     resolver: zodResolver(insertRequestSchema),
@@ -21,32 +20,29 @@ export default function Home() {
     },
   });
 
-  const createRequest = useCreateRequest();
-
   const onSubmit = (data: InsertRequest) => {
-    createRequest.mutate(data, {
-      onSuccess: (result) => {
-        setCreatedId(result.id);
-        toast({
-          title: "Created with love! 💖",
-          description: "Your special link is ready to share.",
-        });
-      },
-      onError: (error) => {
-        toast({
-          title: "Oops!",
-          description: error.message,
-          variant: "destructive",
-        });
-      },
-    });
+    try {
+      const encoded = encodeData(data);
+      const url = `${window.location.origin}/q/${encoded}`;
+      setCreatedUrl(url);
+      toast({
+        title: "Created with love! 💖",
+        description: "Your special link is ready to share.",
+      });
+    } catch (error) {
+      toast({
+        title: "Oops!",
+        description: "Something went wrong creating the link.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const shareUrl = createdId ? `${window.location.origin}/ask/${createdId}` : "";
   const [copied, setCopied] = useState(false);
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(shareUrl);
+    if (!createdUrl) return;
+    navigator.clipboard.writeText(createdUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     toast({
@@ -89,7 +85,7 @@ export default function Home() {
         </div>
 
         <AnimatePresence mode="wait">
-          {!createdId ? (
+          {!createdUrl ? (
             <motion.form 
               key="form"
               initial={{ opacity: 0 }}
@@ -126,15 +122,10 @@ export default function Home() {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                disabled={createRequest.isPending}
                 type="submit"
-                className="w-full py-4 rounded-xl bg-primary text-white font-bold text-lg shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full py-4 rounded-xl bg-primary text-white font-bold text-lg shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all flex items-center justify-center gap-2"
               >
-                {createRequest.isPending ? (
-                  "Creating Magic..."
-                ) : (
-                  <>Create Link <Send size={20} /></>
-                )}
+                Create Link <Send size={20} />
               </motion.button>
             </motion.form>
           ) : (
@@ -155,7 +146,7 @@ export default function Home() {
               <div className="relative">
                 <input 
                   readOnly 
-                  value={shareUrl} 
+                  value={createdUrl} 
                   className="w-full pl-6 pr-14 py-4 rounded-xl bg-secondary border border-border text-muted-foreground font-mono text-sm"
                 />
                 <button
@@ -170,7 +161,7 @@ export default function Home() {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => window.open(shareUrl, '_blank')}
+                  onClick={() => window.open(createdUrl, '_blank')}
                   className="py-3 px-6 rounded-xl border-2 border-primary text-primary font-bold hover:bg-primary/5 transition-colors"
                 >
                   Test Link
@@ -178,7 +169,7 @@ export default function Home() {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => setCreatedId(null)}
+                  onClick={() => setCreatedUrl(null)}
                   className="py-3 px-6 rounded-xl bg-primary text-white font-bold shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all"
                 >
                   Create New

@@ -1,29 +1,7 @@
 
 import { z } from 'zod';
-import { insertRequestSchema, requests } from './schema';
 
-export const api = {
-  requests: {
-    create: {
-      method: 'POST' as const,
-      path: '/api/requests',
-      input: insertRequestSchema,
-      responses: {
-        201: z.custom<typeof requests.$inferSelect>(),
-        400: z.object({ message: z.string() }),
-      },
-    },
-    get: {
-      method: 'GET' as const,
-      path: '/api/requests/:id',
-      responses: {
-        200: z.custom<typeof requests.$inferSelect>(),
-        404: z.object({ message: z.string() }),
-      },
-    },
-  },
-};
-
+// No API needed for stateless version, but we'll keep the buildUrl helper
 export function buildUrl(path: string, params?: Record<string, string | number>): string {
   let url = path;
   if (params) {

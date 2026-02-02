@@ -1,17 +1,18 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useRoute } from "wouter";
-import { useRequest } from "@/hooks/use-requests";
+import { decodeData } from "@shared/schema";
 import { HeartLoader } from "@/components/HeartLoader";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart } from "lucide-react";
 import confetti from "canvas-confetti";
-import { useToast } from "@/hooks/use-toast";
 
 export default function Ask() {
-  const [, params] = useRoute("/ask/:id");
-  const id = params?.id ? parseInt(params.id) : 0;
-  const { data: request, isLoading } = useRequest(id);
-  const { toast } = useToast();
+  const [, params] = useRoute("/q/:data");
+  const encodedData = params?.data || "";
+  
+  const request = useMemo(() => {
+    return decodeData(encodedData);
+  }, [encodedData]);
 
   const [noCount, setNoCount] = useState(0);
   const [yesPressed, setYesPressed] = useState(false);
@@ -27,7 +28,7 @@ export default function Ask() {
       const { width, height } = containerRef.current.getBoundingClientRect();
       setContainerRect({ width, height });
     }
-  }, [isLoading]);
+  }, [request]);
 
   // Handle the "No" button teleportation logic
   const handleNoInteraction = () => {
@@ -46,10 +47,6 @@ export default function Ask() {
     const noHeight = 60;
     
     // Exact equal growth in 10 steps
-    // Initial scale: 1
-    // Final scale at 10 steps: we want it to cover the screen. 
-    // Let's use 20 as the "full screen" scale.
-    // Growth per step = (20 - 1) / 10 = 1.9
     const growthPerStep = 1.9;
     const nextYesScale = 1 + (newCount * growthPerStep);
     
@@ -100,30 +97,27 @@ export default function Ask() {
       }
 
       const particleCount = 50 * (timeLeft / duration);
-      // since particles fall down, start a bit higher than random
       confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
       confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
     }, 250);
   };
 
   // Yes button grows with each No interaction
-  // Every step increases scale equally until it fills screen at step 10
-  // Growth per step = (20 - 1) / 10 = 1.9
   const yesScale = 1 + (noCount * 1.9);
   
-  // If request not found
-  if (!isLoading && !request) {
+  // If data is invalid
+  if (!request && encodedData) {
     return (
       <div className="min-h-screen bg-pink-50 flex items-center justify-center p-4 text-center">
         <div>
           <h1 className="text-4xl font-handwriting text-primary mb-4">Oh no! 💔</h1>
-          <p className="text-muted-foreground">This question seems to have disappeared.</p>
+          <p className="text-muted-foreground">This question link seems to be broken.</p>
         </div>
       </div>
     );
   }
 
-  if (isLoading) return <div className="min-h-screen bg-pink-50 flex items-center justify-center"><HeartLoader /></div>;
+  if (!request) return <div className="min-h-screen bg-pink-50 flex items-center justify-center"><HeartLoader /></div>;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-100 via-white to-pink-200 flex flex-col items-center justify-center p-4 overflow-hidden relative">
@@ -167,7 +161,7 @@ export default function Ask() {
           >
             {/* The Question */}
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-handwriting text-primary font-bold mb-12 drop-shadow-sm px-4 leading-tight">
-              {request?.question}
+              {request.question}
             </h1>
 
             {/* Interactive Area */}
@@ -198,7 +192,6 @@ export default function Ask() {
                 animate={{ 
                   x: noCount === 0 ? 100 : 0,
                   scale: noCount >= 10 ? 30 : yesScale,
-                  // When huge, ensure it covers the screen properly
                   zIndex: noCount >= 10 ? 50 : 10,
                 }}
                 className={`
@@ -235,7 +228,7 @@ export default function Ask() {
             </motion.div>
             
             <h2 className="text-3xl md:text-5xl font-handwriting font-bold text-primary leading-tight bg-white/50 backdrop-blur-sm p-6 rounded-3xl shadow-lg border border-white/50">
-              {request?.message}
+              {request.message}
             </h2>
           </motion.div>
         )}
