@@ -83,8 +83,8 @@ export default {
         },
       },
       fontFamily: {
-        sans: ["var(--font-sans)"],
-        serif: ["var(--font-serif)"],
+        sans: ["Poppins", "sans-serif"],
+        handwriting: ["Architects Daughter", "cursive"],
         mono: ["var(--font-mono)"],
       },
       keyframes: {
